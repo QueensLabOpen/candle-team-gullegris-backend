@@ -26,7 +26,7 @@ func NewRouter () *mux.Router {
 	rand.Seed(time.Now().Unix())
 
 	// Create a new game
-	r.HandleFunc("/create", func (rw http.ResponseWriter, req *http.Request) {
+	r.Handle("/create", corsHeaders(http.HandlerFunc(func (rw http.ResponseWriter, req *http.Request) {
 		store.Games = append(store.Games, []int{1})
 		server.CreateStream(strconv.FormatInt(int64(len(store.Games)), 10))
 
@@ -35,10 +35,10 @@ func NewRouter () *mux.Router {
 		})
 
 		rend.JSON(rw, http.StatusOK, map[string]int{"gid": len(store.Games), "pid": store.Games[len(store.Games) - 1][len(store.Games[len(store.Games) - 1]) - 1]})
-	}).Methods("POST")
+	}))).Methods("POST")
 
 	// Join a game
-	r.HandleFunc("/join/{gid}", func (rw http.ResponseWriter, req *http.Request) {
+	r.Handle("/join/{gid}", corsHeaders(http.HandlerFunc(func (rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		gid, _ := strconv.ParseInt(vars["gid"], 10, 64)
 		if len(store.Games) < int(gid) {
@@ -49,13 +49,13 @@ func NewRouter () *mux.Router {
 		pid := len(store.Games[gid - 1]) + 1
 		store.Games[gid - 1] = append(store.Games[gid - 1], pid)
 		rend.JSON(rw, http.StatusOK, map[string]int{"pid": pid})
-	}).Methods("POST")
+	}))).Methods("POST")
 
 	// Join stream
-	r.HandleFunc("/stream", server.HTTPHandler)
+	r.Handle("/stream", corsHeaders(http.HandlerFunc(server.HTTPHandler)))
 
 	// Start session
-	r.HandleFunc("/start/{gid}", func (rw http.ResponseWriter, req *http.Request) {
+	r.Handle("/start/{gid}", corsHeaders(http.HandlerFunc(func (rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		gid, _ := strconv.ParseInt(vars["gid"], 10, 64)
 		if len(store.Games) < int(gid) {
@@ -68,10 +68,10 @@ func NewRouter () *mux.Router {
 		})
 
 		rend.JSON(rw, http.StatusOK, []byte(""))
-	}).Methods("POST")
+	}))).Methods("POST")
 
 	// Trigger
-	r.HandleFunc("/trigger/{gid}", func (rw http.ResponseWriter, req *http.Request) {
+	r.Handle("/trigger/{gid}", corsHeaders(http.HandlerFunc(func (rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		gid, _ := strconv.ParseInt(vars["gid"], 10, 64)
 		players := store.Games[gid - 1]
@@ -81,7 +81,18 @@ func NewRouter () *mux.Router {
 		})
 
 		rend.JSON(rw, http.StatusOK, []byte(""))
-	}).Methods("POST")
+	}))).Methods("POST")
 
 	return r
+}
+
+func corsHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type,X-Csrf-Token")
+		rw.Header().Set("Access-Control-Allow-Methods", "PUT,POST,GET,OPTIONS,DELETE")
+		rw.Header().Set("Access-Control-Expose-Headers", "X-Csrf-Token")
+		rw.Header().Set("Access-Control-Allow-Credentials", "true")
+		next.ServeHTTP(rw, req)
+	})
 }
