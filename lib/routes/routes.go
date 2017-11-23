@@ -31,6 +31,7 @@ func NewRouter () *mux.Router {
 		server.CreateStream(strconv.FormatInt(int64(len(store.Games)), 10))
 
 		server.Publish(strconv.FormatInt(int64(len(store.Games)), 10), &sse.Event{
+			Event: []byte(strconv.FormatInt(int64(len(store.Games)), 10)),
 			Data: []byte("wait"),
 		})
 
@@ -52,7 +53,7 @@ func NewRouter () *mux.Router {
 	}))).Methods("POST")
 
 	// Join stream
-	r.Handle("/stream", corsHeaders(http.HandlerFunc(server.HTTPHandler)))
+	r.HandleFunc("/stream", server.HTTPHandler)
 
 	// Start session
 	r.Handle("/start/{gid}", corsHeaders(http.HandlerFunc(func (rw http.ResponseWriter, req *http.Request) {
@@ -64,6 +65,7 @@ func NewRouter () *mux.Router {
 		}
 
 		server.Publish(vars["gid"], &sse.Event{
+			Event: []byte(strconv.FormatInt(int64(len(store.Games)), 10)),
 			Data: []byte("start"),
 		})
 
@@ -77,6 +79,7 @@ func NewRouter () *mux.Router {
 		players := store.Games[gid - 1]
 
 		server.Publish(vars["gid"], &sse.Event{
+			Event: []byte(strconv.FormatInt(int64(len(store.Games)), 10)),
 			Data: []byte(strconv.Itoa(players[rand.Intn(len(players))])),
 		})
 
