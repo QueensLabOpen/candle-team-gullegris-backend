@@ -88,7 +88,7 @@ func NewRouter () *mux.Router {
 
 func corsHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
 		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type,X-Csrf-Token")
 		rw.Header().Set("Access-Control-Allow-Methods", "PUT,POST,GET,OPTIONS,DELETE")
 		rw.Header().Set("Access-Control-Expose-Headers", "X-Csrf-Token")
