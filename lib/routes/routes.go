@@ -101,7 +101,7 @@ func NewRouter () *mux.Router {
 
 		server.Publish(vars["gid"], &sse.Event{
 			Event: []byte(strconv.FormatInt(int64(len(store.Games)), 10)),
-			Data: []byte(strconv.Itoa(players[id])),
+			Data: []byte(strconv.Itoa(id)),
 		})
 
 		rend.JSON(rw, http.StatusOK, []byte(""))
