@@ -69,18 +69,39 @@ func NewRouter () *mux.Router {
 			Data: []byte("start"),
 		})
 
+
+		go func (gid string) {
+			time.Sleep(time.Second * 60)
+			igid, _ := strconv.ParseInt(vars["gid"], 10, 64)
+			server.Publish(gid, &sse.Event{
+
+				Event: []byte(strconv.FormatInt(igid, 10)),
+				Data: []byte("gameover"),
+			})
+		}(vars["gid"])
+
 		rend.JSON(rw, http.StatusOK, []byte(""))
 	}))).Methods("POST")
 
 	// Trigger
-	r.Handle("/trigger/{gid}", corsHeaders(http.HandlerFunc(func (rw http.ResponseWriter, req *http.Request) {
+	r.Handle("/trigger/{gid}/{pid}", corsHeaders(http.HandlerFunc(func (rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		gid, _ := strconv.ParseInt(vars["gid"], 10, 64)
+		pid, _ := strconv.ParseInt(vars["pid"], 10, 64)
 		players := store.Games[gid - 1]
+
+		var id int
+		loop := true
+		for loop {
+			id = rand.Intn(len(players))
+			if id != int(pid) {
+				loop = false
+			}
+		}
 
 		server.Publish(vars["gid"], &sse.Event{
 			Event: []byte(strconv.FormatInt(int64(len(store.Games)), 10)),
-			Data: []byte(strconv.Itoa(players[rand.Intn(len(players))])),
+			Data: []byte(strconv.Itoa(players[id])),
 		})
 
 		rend.JSON(rw, http.StatusOK, []byte(""))
